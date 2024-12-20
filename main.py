@@ -15,18 +15,32 @@ def load_settings(config_path):
     with open(config_path, 'r') as file:
         return yaml.safe_load(file)
 
-def initialize_git_repo(save_folder, remote_repo_url=None, push_to_repo=False):
+def initialize_git_repo(save_folder, remote_repo_url=None, push_to_repo=False, ssh_push_key=None):
     if not os.path.isdir(os.path.join(save_folder, '.git')):
         repo = git.Repo.init(save_folder)
-        repo.git.checkout('-b', 'main')  # Initialize with branch 'main'
+        repo.git.checkout('-b', 'main') 
+
+        initial_file = os.path.join(save_folder, '.gitkeep')
+        with open(initial_file, 'w') as f:
+            f.write('')
+
+        repo.index.add([initial_file])
+        repo.index.commit('Initial commit')
+
         if push_to_repo and remote_repo_url:
-            repo.create_remote('origin', remote_repo_url)
+            origin = repo.create_remote('origin', remote_repo_url)
+            with repo.git.custom_environment(GIT_SSH_COMMAND=f'ssh -i {ssh_push_key}'):
+                repo.git.fetch('origin')
+            repo.create_head('main').set_tracking_branch(origin.refs.main)
     else:
         repo = git.Repo(save_folder)
         if push_to_repo:
             origin = repo.remotes.origin if 'origin' in repo.remotes else repo.create_remote('origin', remote_repo_url)
             if origin.url != remote_repo_url:
                 origin.set_url(remote_repo_url)
+            with repo.git.custom_environment(GIT_SSH_COMMAND=f'ssh -i {ssh_push_key}'):
+                repo.git.fetch('origin')
+            repo.heads.main.set_tracking_branch(origin.refs.main)
     return repo
 
 def process_file(file, save_folder):
@@ -76,7 +90,7 @@ def main():
     org_data = '{\"Org\": \"' + controller_org + '\"}'
     basic_auth = HTTPBasicAuth(controller_username, controller_password)
 
-    repo = initialize_git_repo(save_folder, remote_repo_url, push_to_repo)
+    repo = initialize_git_repo(save_folder, remote_repo_url, push_to_repo, ssh_push_key)
     
     with repo.config_writer() as git_config:
         git_config.set_value('user', 'name', git_author_name)
