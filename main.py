@@ -18,6 +18,7 @@ def load_settings(config_path):
 def initialize_git_repo(save_folder, remote_repo_url=None, push_to_repo=False):
     if not os.path.isdir(os.path.join(save_folder, '.git')):
         repo = git.Repo.init(save_folder)
+        repo.git.checkout('-b', 'main')  # Initialize with branch 'main'
         if push_to_repo and remote_repo_url:
             repo.create_remote('origin', remote_repo_url)
     else:
