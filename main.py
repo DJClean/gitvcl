@@ -15,13 +15,17 @@ def load_settings(config_path):
     with open(config_path, 'r') as file:
         return yaml.safe_load(file)
 
-def initialize_git_repo(save_folder, remote_repo_url = None):
+def initialize_git_repo(save_folder, remote_repo_url=None, push_to_repo=False):
     if not os.path.isdir(os.path.join(save_folder, '.git')):
         repo = git.Repo.init(save_folder)
-        if not remote_repo_url is None:
+        if push_to_repo and remote_repo_url:
             repo.create_remote('origin', remote_repo_url)
     else:
         repo = git.Repo(save_folder)
+        if push_to_repo:
+            origin = repo.remotes.origin if 'origin' in repo.remotes else repo.create_remote('origin', remote_repo_url)
+            if origin.url != remote_repo_url:
+                origin.set_url(remote_repo_url)
     return repo
 
 def process_file(file, save_folder):
@@ -71,7 +75,7 @@ def main():
     org_data = '{\"Org\": \"' + controller_org + '\"}'
     basic_auth = HTTPBasicAuth(controller_username, controller_password)
 
-    repo = initialize_git_repo(save_folder, remote_repo_url)
+    repo = initialize_git_repo(save_folder, remote_repo_url, push_to_repo)
     
     with repo.config_writer() as git_config:
         git_config.set_value('user', 'name', git_author_name)
