@@ -1,0 +1,18 @@
+api_url: http://localhost:8002
+
+controller:
+  username: username
+  password: password
+  organization: organization
+
+git:
+  author: Varnish Backups
+  email: noreply@example.com
+  repo_folder: vcl_backup_folder
+  push_to_repo: false
+  ssh_key: .ssh/random_key
+  repository: git@github.com:yourusername/yourrepo.git
+
+logging:
+  level: INFO
+  file: /var/log/vcl_backup.log
